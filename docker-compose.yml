@@ -24,6 +24,31 @@ services:
       - gmaps_data:/gmapsdata    # job results; they persist until you delete the job or the volume
       - gmaps_cache:/opt         # Playwright browser cache, so restarts skip the download
 
+  # Optional webhook relay: POSTs each finished job's CSV to WEBHOOK_URL from .env.
+  # Off by default. Start it with:  docker compose --profile webhook up -d
+  # It only polls the engine every few seconds, so it needs a few MB of RAM and next to no CPU.
+  webhook:
+    profiles: ["webhook"]
+    image: python:3.12-alpine
+    container_name: gmaps-webhook
+    restart: unless-stopped
+    depends_on: [google-maps-scraper]
+    command: ["python", "/app/webhook.py"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      SCRAPER_BASE_URL: http://google-maps-scraper:8080   # engine over the compose network
+      WEBHOOK_STATE: /state/webhook-state.json
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # lets WEBHOOK_URL reach an app on the host
+    volumes:
+      - ./scripts:/app:ro
+      - webhook_state:/state
+    mem_limit: 64m
+    cpus: 0.25
+
 volumes:
   gmaps_data:
   gmaps_cache:
+  webhook_state:

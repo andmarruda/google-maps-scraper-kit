@@ -29,15 +29,15 @@ from concurrent.futures import ThreadPoolExecutor
 ENV_KEYS = ("SCRAPER_BASE_URL", "SCRAPER_PORT", "SCRAPER_API_KEY")
 
 
-def load_env_file():
-    """Read SCRAPER_* from the kit's .env, the same file docker compose reads, so a remapped
-    port needs one edit. Variables already set in the environment win over the file."""
+def load_env_file(keys=ENV_KEYS):
+    """Read SCRAPER_* (or the given keys) from the kit's .env, the same file docker compose reads,
+    so a remapped port needs one edit. Variables already set in the environment win over the file."""
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, ".env")
     try:
         with open(path) as f:
             for line in f:
                 k, sep, v = line.strip().partition("=")
-                if sep and k in ENV_KEYS and k not in os.environ:
+                if sep and k in keys and k not in os.environ:
                     os.environ[k] = v.strip().strip("\"'")
     except OSError:
         pass
